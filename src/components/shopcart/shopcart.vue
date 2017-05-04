@@ -346,11 +346,9 @@ export default {
         max-height 257px
         left 0
         z-index -1
-        transition all .5s
+        transition all .3s
         &.fold-enter-active, &.fold-leave-active
-          transform translate3d(0,-100%,0)
-        &.fold-enter, &.fold-leave-active
-          transform translate3d(0,0,0)
+          transform translate3d(0,100%,0)
         .list-header
           width 100%
           background-color #f3f5f7
