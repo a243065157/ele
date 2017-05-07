@@ -35,6 +35,22 @@
           <div class="rating">
             <h1 class="title">商品评价</h1>
             <ratingselect :selectType="selectType" :onlyContent="onlyContent" :desc="desc" :ratings="food.ratings"></ratingselect>
+            <div class="rating-wrapper">
+              <ul v-show="food.ratings && food.ratings.length">
+                <li v-show="needShow(rating.rateType,rating.text)" v-for="rating in food.ratings" class="rating-item border-1px">
+                  <div class="user">
+                    <span class="name">{{rating.username}}</span>
+                    <img :src="rating.avatar" width="12" height="12" class="avatar">
+                  </div>
+                  <div class="time">{{rating.rateTime | formatDate}}</div>
+                  <p class="text">
+                    <span :class="{'icon-thumb_up':rating.rateType===0,'icon-thumb_down':rating.rateType===1}"></span>
+                    {{rating.text}}
+                  </p>
+                </li>
+              </ul>
+              <div class="no-rating" v-show="!food.ratings||!food.ratings.length">暂无评价</div>
+            </div>
           </div>
         </div>
       </div>
@@ -48,6 +64,7 @@ import ratingselect from '../ratingselect/ratingselect';
 import Vue from 'vue';
 import Bus from '../../common/js/bus.js';
 import cartcontrol from '../cartcontrol/cartcontrol';
+import { formatDate } from '../../common/js/date.js';
 // const POSITIVE = 0;
 // const NEGATIVE = 1;
 const ALL = 2;
@@ -61,7 +78,7 @@ export default {
     return {
       showFlag: false,
       selectType: ALL,
-      onlyContent: true,
+      onlyContent: false,
       desc: {
         all: '全部',
         positive: '推荐',
@@ -69,12 +86,19 @@ export default {
       }
     };
   },
+  filters: {
+    formatDate(time) {
+      let date = new Date(time);
+      return formatDate(date, 'yyy-MM-dd hh:mm');
+    }
+  },
   methods: {
     show() {
+      let that = this;
       this.showFlag = true;
       // 初始化组件
       this.selectType = ALL;
-      this.onlyContent = true;
+      this.onlyContent = false;
       this.$nextTick(() => {
         if (!this.scroll) {
           this.scroll = new BScroll(this.$refs.food, {
@@ -83,6 +107,18 @@ export default {
         } else {
           this.scroll.refresh();
         }
+      });
+      Bus.$on('ratingType.select', function (Num) {
+        that.selectType = Num;
+        that.$nextTick(() => {
+          that.scroll.refresh();
+        });
+      });
+      Bus.$on('content.toggle', function () {
+        that.onlyContent = !that.onlyContent;
+        that.$nextTick(() => {
+          that.scroll.refresh();
+        });
       });
     },
     hide() {
@@ -93,9 +129,19 @@ export default {
       if (!event._constructed) {
         return;
       }
-      console.log(123123);
       Vue.set(this.food, 'count', 1);
       Bus.$emit('cart_add', event.target);
+    },
+    needShow(type, text) {
+      // 點擊只看內容的評價 判斷
+      if (this.onlyContent && !text) {
+        return false;
+      };
+      if (this.selectType === ALL) {
+        return true;
+      } else {
+        return type === this.selectType;
+      }
     }
   },
   components: {
@@ -106,6 +152,7 @@ export default {
 };
 </script>
 <style lang="stylus" rel="stylesheet/stylus">
+  @import "../../common/stylus/mixin.styl"
   .food
     position fixed
     width 100%
@@ -213,4 +260,48 @@ export default {
         line-height 14px
         font-size 14px
         color rgb(7,17,27)
+      .rating-wrapper
+        padding 0 18px
+        .rating-item
+          position relative
+          padding 16px 0
+          border-1px(rgba(7,17,27,0.1))
+          .user
+            position absolute
+            right 0
+            top 16px
+            font-size 0
+            line-height 12px
+            .name
+              display inline-block
+              font-size 10px
+              color rgb(147,153,159)
+              line-height 12px
+              vertical-align top
+              margin-right 6px
+            .avatar
+              border-radius 50%;
+          .time
+            margin-bottom 6px
+            line-height 12px
+            font-size 10px
+            color rgb(147,153,159)
+          .text
+            font-size 12px
+            color rgb(7,17,27)
+            // padding-bottom 16px
+            line-height 16px
+            vertical-align top
+            .icon-thumb_up,.icon-thumb_down
+              line-height 16px
+              font-size 12px
+              margin-right 4px
+            .icon-thumb_up
+              color rgb(0,160,220)
+            .icon-thumb_down
+              color rgb(147,153,159)
+        .no-rating
+          padding 16px 0
+          font-size 12px
+          color rgb(147,153,159)
 </style>
